@@ -24,6 +24,7 @@ sock.connect({port: TCP_PORT, host: HOST}, function()
 
 sock.on('data', function(data)
 {
+	//NB. watch for duel messages
 	data = JSON.parse(data.toString());
 	console.log("SERVER_TCP to SC_UDP: ", data);
 	udpPort.send(data,"localhost", UPD_SEND_PORT);
