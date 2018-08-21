@@ -9,30 +9,12 @@ const UPD_SEND_PORT = 57120;
 
 var net = require('net');
 var osc = require('osc');
+var sock;
 
 var udpPort = new osc.UDPPort({
 	localAddress: "localhost",
 	localPort: UDP_RECEIVE_PORT
 });
-
-var sock = new net.Socket();
-
-sock.connect({port: TCP_PORT, host: HOST}, function()
-{
-	console.log("Successfully connected to host");
-});
-
-sock.on('data', function(data)
-{
-	//NB. watch for duel messages
-	data = JSON.parse(data.toString());
-	console.log("SERVER_TCP to SC_UDP: ", data);
-	udpPort.send(data,"localhost", UPD_SEND_PORT);
-});
-
-sock.on('close', function(){
-	console.log("Warning socket closed from remote");
-})
 
 udpPort.on('message', (msg, rinfo) =>
 {
@@ -42,3 +24,43 @@ udpPort.on('message', (msg, rinfo) =>
 });
 
 udpPort.open();
+
+connect();
+
+function connect()
+{
+	sock = new net.Socket();
+
+	sock.connect({port: TCP_PORT, host: HOST}, function()
+	{
+		console.log("Successfully connected to host");
+	});
+
+	sock.on('data', function(data)
+	{
+		//catch duel messages with a regex
+		var s = data.toString();
+		var r = /\{.*\}/g
+		var m = r.exec(s);
+		while(m != null)
+		{
+			data = JSON.parse(m[0]);
+			console.log("SERVER_TCP to SC_UDP: ", data);
+			udpPort.send(data,"localhost", UPD_SEND_PORT);
+			m = r.exec(s);
+		}
+
+	});
+
+	sock.on('close', function()
+	{
+		console.log("Warning socket closed - retrying");
+		setTimeout(connect, 1000);
+	});
+
+	sock.on('error', function(err)
+	{
+		console.log("Caught error: " + err);
+	})
+
+}
