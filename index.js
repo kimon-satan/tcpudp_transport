@@ -19,7 +19,7 @@ var udpPort = new osc.UDPPort({
 udpPort.on('message', (msg, rinfo) =>
 {
 	msg = JSON.stringify(msg);
-	console.log("SC_UDP to SERVER_TCP", msg);
+	//console.log("SC_UDP to SERVER_TCP", msg);
 	sock.write(msg);
 });
 
@@ -40,14 +40,22 @@ function connect()
 	{
 		//catch duel messages with a regex
 		var s = data.toString();
-		var r = /\{.*\}/g
+		var r = /\{.*?\}/g
 		var m = r.exec(s);
 		while(m != null)
 		{
-			data = JSON.parse(m[0]);
-			console.log("SERVER_TCP to SC_UDP: ", data);
-			udpPort.send(data,"localhost", UPD_SEND_PORT);
-			m = r.exec(s);
+			try
+			{
+				data = JSON.parse(m[0],s);
+				//console.log("SERVER_TCP to SC_UDP: ", data);
+				udpPort.send(data,"localhost", UPD_SEND_PORT);
+				m = r.exec(s);
+			}
+			catch(e)
+			{
+				console.log(m);
+				console.log(e);
+			}
 		}
 
 	});
